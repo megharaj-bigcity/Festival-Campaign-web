@@ -44,7 +44,7 @@ const RewardStrategyForm = () => {
 
     try {
       // Replace this URL with your actual n8n webhook URL
-      const n8nWebhookUrl = 'http://localhost:5678/webhook/e1140662-d5bb-4ad4-93d3-54268b6019be';
+      const n8nWebhookUrl = 'https://sharp-live-hornet.ngrok-free.app/webhook/e1140662-d5bb-4ad4-93d3-54268b6019be';
       
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',

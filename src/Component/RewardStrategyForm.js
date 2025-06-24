@@ -194,15 +194,23 @@ const RewardStrategyForm = () => {
               <Target className="w-4 h-4 mr-2" />
               Campaign Objective *
             </label>
-            <textarea
+            <select
               name="campaignObjective"
               value={formData.campaignObjective}
               onChange={handleInputChange}
               required
-              rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-              placeholder="e.g., To drive sales during festive season"
-            />
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            >
+              <option value="">Select your campaign objective</option>
+              <option value="Drive sales/conversions">Drive sales/conversions</option>
+              <option value="Acquire new customers">Acquire new customers</option>
+              <option value="Increase repeat purchases">Increase repeat purchases</option>
+              <option value="Boost product trials/sampling">Boost product trials/sampling</option>
+              <option value="Engage trade/channel partners">Engage trade/channel partners</option>
+              <option value="Drive store/online footfalls">Drive store/online footfalls</option>
+              <option value="Engage customers through gamified experiences">Engage customers through gamified experiences</option>
+              <option value="New product launch">New product launch</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -44,7 +44,7 @@ const RewardStrategyForm = () => {
 
     try {
       // Replace this URL with your actual n8n webhook URL
-      const n8nWebhookUrl = 'http://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
+      const n8nWebhookUrl = 'https://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
       
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',

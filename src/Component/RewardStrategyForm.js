@@ -15,6 +15,7 @@ const RewardStrategyForm = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('');
+  const [errorDetails, setErrorDetails] = useState('');
 
   const industries = [
     'FMCG Home Care',
@@ -41,24 +42,49 @@ const RewardStrategyForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('');
+    setErrorDetails('');
 
     try {
-      // Replace this URL with your actual n8n webhook URL
-      const n8nWebhookUrl = 'https://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
+      // Validate required fields
+      const requiredFields = ['name', 'email', 'mobile', 'companyBrand', 'industry', 'campaignObjective', 'targetAudience', 'age'];
+      const missingFields = requiredFields.filter(field => !formData[field].trim());
       
+      if (missingFields.length > 0) {
+        setSubmitStatus('error');
+        setErrorDetails(`Missing required fields: ${missingFields.join(', ')}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Submitting form data:', formData);
+
+      const n8nWebhookUrl = 'http://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
+      
+      const payload = {
+        ...formData,
+        timestamp: new Date().toISOString(),
+        source: 'react_form'
+      };
+
+      console.log('Payload being sent:', payload);
+
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          timestamp: new Date().toISOString(),
-          source: 'react_form'
-        })
+        body: JSON.stringify(payload),
+        mode: 'cors', // Explicitly set CORS mode
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (response.ok) {
+        const responseData = await response.text();
+        console.log('Response data:', responseData);
+        
         setSubmitStatus('success');
         setFormData({
           name: '',
@@ -71,13 +97,42 @@ const RewardStrategyForm = () => {
           age: ''
         });
       } else {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
         setSubmitStatus('error');
+        setErrorDetails(`Server error (${response.status}): ${errorText || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       setSubmitStatus('error');
+      
+      // More specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setErrorDetails('Network error: Unable to connect to server. Please check your internet connection.');
+      } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
+        setErrorDetails('CORS error: The server needs to allow cross-origin requests.');
+      } else {
+        setErrorDetails(`Error: ${error.message}`);
+      }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Test webhook connectivity
+  const testWebhook = async () => {
+    try {
+      const response = await fetch('https://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0', {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': window.location.origin,
+          'Access-Control-Request-Method': 'POST',
+          'Access-Control-Request-Headers': 'Content-Type',
+        },
+      });
+      console.log('OPTIONS response:', response.status);
+    } catch (error) {
+      console.error('OPTIONS test failed:', error);
     }
   };
 
@@ -258,28 +313,43 @@ const RewardStrategyForm = () => {
           {submitStatus === 'error' && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 font-medium">
-                ❌ There was an error submitting your request. Please try again.
+                ❌ There was an error submitting your request.
               </p>
+              {errorDetails && (
+                <p className="text-red-600 text-sm mt-2">
+                  Details: {errorDetails}
+                </p>
+              )}
             </div>
           )}
 
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Processing Request...
-              </div>
-            ) : (
-              <>
-                <Send className="w-5 h-5 mr-2" />
-                Get My Reward Strategy Report
-              </>
-            )}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Processing Request...
+                </div>
+              ) : (
+                <>
+                  <Send className="w-5 h-5 mr-2" />
+                  Get My Reward Strategy Report
+                </>
+              )}
+            </button>
+            
+            <button
+              type="button"
+              onClick={testWebhook}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Test Connection
+            </button>
+          </div>
         </div>
 
         <div className="mt-8 text-center">

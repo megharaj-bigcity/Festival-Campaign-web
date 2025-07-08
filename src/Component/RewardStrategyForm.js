@@ -58,7 +58,7 @@ const RewardStrategyForm = () => {
 
       console.log('Submitting form data:', formData);
 
-      const n8nWebhookUrl = 'http://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
+      const n8nWebhookUrl = 'https://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
       
       const payload = {
         ...formData,

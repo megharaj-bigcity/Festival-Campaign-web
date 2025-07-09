@@ -6,7 +6,8 @@ const RewardStrategyForm = () => {
     name: '',
     email: '',
     mobile: '',
-    companyBrand: '',
+    companyName: '',
+    brandName: '',
     industry: '',
     campaignObjective: '',
     targetAudience: '',
@@ -15,7 +16,6 @@ const RewardStrategyForm = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('');
-  const [errorDetails, setErrorDetails] = useState('');
 
   const industries = [
     'FMCG Home Care',
@@ -31,108 +31,65 @@ const RewardStrategyForm = () => {
   ];
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type, checked } = e.target;
+    
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked 
+          ? [...prev[name], value]
+          : prev[name].filter(item => item !== value)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('');
-    setErrorDetails('');
 
     try {
-      // Validate required fields
-      const requiredFields = ['name', 'email', 'mobile', 'companyBrand', 'industry', 'campaignObjective', 'targetAudience', 'age'];
-      const missingFields = requiredFields.filter(field => !formData[field].trim());
+      // Replace this URL with your actual n8n webhook URL
+      const n8nWebhookUrl = 'https://your-n8n-instance.com/webhook/reward-strategy-form';
       
-      if (missingFields.length > 0) {
-        setSubmitStatus('error');
-        setErrorDetails(`Missing required fields: ${missingFields.join(', ')}`);
-        setIsSubmitting(false);
-        return;
-      }
-
-      console.log('Submitting form data:', formData);
-
-      const n8nWebhookUrl = 'https://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
-      
-      const payload = {
-        ...formData,
-        timestamp: new Date().toISOString(),
-        source: 'react_form'
-      };
-
-      console.log('Payload being sent:', payload);
-
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
-        body: JSON.stringify(payload),
-        mode: 'cors', // Explicitly set CORS mode
+        body: JSON.stringify({
+          ...formData,
+          timestamp: new Date().toISOString(),
+          source: 'react_form'
+        })
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
-
       if (response.ok) {
-        const responseData = await response.text();
-        console.log('Response data:', responseData);
-        
         setSubmitStatus('success');
         setFormData({
           name: '',
           email: '',
           mobile: '',
-          companyBrand: '',
+          companyName: '',
+          brandName: '',
           industry: '',
           campaignObjective: '',
           targetAudience: '',
           age: ''
         });
       } else {
-        const errorText = await response.text();
-        console.error('Server error:', errorText);
         setSubmitStatus('error');
-        setErrorDetails(`Server error (${response.status}): ${errorText || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       setSubmitStatus('error');
-      
-      // More specific error messages
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setErrorDetails('Network error: Unable to connect to server. Please check your internet connection.');
-      } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
-        setErrorDetails('CORS error: The server needs to allow cross-origin requests.');
-      } else {
-        setErrorDetails(`Error: ${error.message}`);
-      }
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Test webhook connectivity
-  const testWebhook = async () => {
-    try {
-      const response = await fetch('https://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0', {
-        method: 'OPTIONS',
-        headers: {
-          'Origin': window.location.origin,
-          'Access-Control-Request-Method': 'POST',
-          'Access-Control-Request-Headers': 'Content-Type',
-        },
-      });
-      console.log('OPTIONS response:', response.status);
-    } catch (error) {
-      console.error('OPTIONS test failed:', error);
     }
   };
 
@@ -209,16 +166,32 @@ const RewardStrategyForm = () => {
             <div>
               <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <Building2 className="w-4 h-4 mr-2" />
-                Company/Brand Name *
+                Company Name *
               </label>
               <input
                 type="text"
-                name="companyBrand"
-                value={formData.companyBrand}
+                name="companyName"
+                value={formData.companyName}
                 onChange={handleInputChange}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="e.g., Lizol Floor Cleaner"
+                placeholder="e.g., Unilever, P&G, Nestle"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                <Building2 className="w-4 h-4 mr-2" />
+                Brand Name *
+              </label>
+              <input
+                type="text"
+                name="brandName"
+                value={formData.brandName}
+                onChange={handleInputChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                placeholder="e.g., Lizol, Maggi, Dove"
               />
             </div>
           </div>
@@ -241,64 +214,88 @@ const RewardStrategyForm = () => {
                   {industry}
                 </option>
               ))}
+              <option value="Stationery">Stationery</option>
+              <option value="Kitchenware and homeware">Kitchenware and homeware</option>
+              <option value="Toys">Toys</option>
+              <option value="Telecom">Telecom</option>
+              <option value="Pet care and food">Pet care and food</option>
             </select>
           </div>
 
           <div>
             <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
               <Target className="w-4 h-4 mr-2" />
-              Campaign Objective *
+              Campaign Objective * (Select multiple options)
             </label>
-            <select
-              name="campaignObjective"
-              value={formData.campaignObjective}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            >
-              <option value="">Select your campaign objective</option>
-              <option value="Drive sales/conversions">Drive sales/conversions</option>
-              <option value="Acquire new customers">Acquire new customers</option>
-              <option value="Increase repeat purchases">Increase repeat purchases</option>
-              <option value="Boost product trials/sampling">Boost product trials/sampling</option>
-              <option value="Engage trade/channel partners">Engage trade/channel partners</option>
-              <option value="Drive store/online footfalls">Drive store/online footfalls</option>
-              <option value="Engage customers through gamified experiences">Engage customers through gamified experiences</option>
-              <option value="New product launch">New product launch</option>
-            </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                'Drive sales/conversions',
+                'Acquire new customers',
+                'Increase repeat purchases',
+                'Boost product trials/sampling',
+                'Engage trade/channel partners',
+                'Drive store/online footfalls',
+                'Drive engagement',
+                'New product launch'
+              ].map((objective) => (
+                <label key={objective} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="campaignObjective"
+                    value={objective}
+                    checked={formData.campaignObjective.includes(objective)}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">{objective}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <Users className="w-4 h-4 mr-2" />
-                Target Audience *
+                Target Audience * (Select multiple options)
               </label>
-              <input
-                type="text"
-                name="targetAudience"
-                value={formData.targetAudience}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="e.g., women, working professionals"
-              />
+              <div className="space-y-2">
+                {['Men', 'Women', 'Kids', 'Young Adults'].map((audience) => (
+                  <label key={audience} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="targetAudience"
+                      value={audience}
+                      checked={formData.targetAudience.includes(audience)}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{audience}</span>
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div>
               <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
                 <Users className="w-4 h-4 mr-2" />
-                Age Range *
+                Age Group * (Select multiple options)
               </label>
-              <input
-                type="text"
-                name="age"
-                value={formData.age}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="e.g., 25-60"
-              />
+              <div className="space-y-2">
+                {['Below 18', '18 to 25', '25 - 40', 'Above 40'].map((ageGroup) => (
+                  <label key={ageGroup} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="age"
+                      value={ageGroup}
+                      checked={formData.age.includes(ageGroup)}
+                      onChange={handleInputChange}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{ageGroup}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -313,36 +310,28 @@ const RewardStrategyForm = () => {
           {submitStatus === 'error' && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 font-medium">
-                ❌ There was an error submitting your request.
+                ❌ There was an error submitting your request. Please try again.
               </p>
-              {errorDetails && (
-                <p className="text-red-600 text-sm mt-2">
-                  Details: {errorDetails}
-                </p>
-              )}
             </div>
           )}
 
-          <div className="flex gap-4">
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processing Request...
-                </div>
-              ) : (
-                <>
-                  <Send className="w-5 h-5 mr-2" />
-                  Get My Reward Strategy Report
-                </>
-              )}
-            </button>
-            
-          </div>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Processing Request...
+              </div>
+            ) : (
+              <>
+                <Send className="w-5 h-5 mr-2" />
+                Get My Reward Strategy Report
+              </>
+            )}
+          </button>
         </div>
 
         <div className="mt-8 text-center">

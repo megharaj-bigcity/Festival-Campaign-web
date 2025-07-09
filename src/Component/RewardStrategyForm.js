@@ -9,13 +9,14 @@ const RewardStrategyForm = () => {
     companyName: '',
     brandName: '',
     industry: '',
-    campaignObjective: '',
-    targetAudience: '',
-    age: ''
+    campaignObjective: [],
+    targetAudience: [],
+    age: []
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState('');
+  const [errorDetails, setErrorDetails] = useState('');
 
   const industries = [
     'FMCG Home Care',
@@ -27,7 +28,12 @@ const RewardStrategyForm = () => {
     'Consumer Durable Goods',
     'Alcohol Beverages',
     'Banking and Financial Industries',
-    'Automotive'
+    'Automotive',
+    'Stationery',
+    'Kitchenware and homeware',
+    'Toys',
+    'Telecom',
+    'Pet care and food'
   ];
 
   const handleInputChange = (e) => {
@@ -52,24 +58,58 @@ const RewardStrategyForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
     setSubmitStatus('');
+    setErrorDetails('');
 
     try {
-      // Replace this URL with your actual n8n webhook URL
-      const n8nWebhookUrl = 'https://n8n.srv888880.hstgr.cloud/webhook/54d0558c-8b37-4927-873c-9df1f7b535c0';
+      // Validate required fields
+      const requiredFields = ['name', 'email', 'mobile', 'companyName', 'brandName', 'industry'];
+      const missingFields = requiredFields.filter(field => !formData[field].trim());
       
+      // Check if arrays have selections
+      if (formData.campaignObjective.length === 0) missingFields.push('campaignObjective');
+      if (formData.targetAudience.length === 0) missingFields.push('targetAudience'); 
+      if (formData.age.length === 0) missingFields.push('age');
+      
+      if (missingFields.length > 0) {
+        setSubmitStatus('error');
+        setErrorDetails(`Missing required fields: ${missingFields.join(', ')}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Submitting form data:', formData);
+
+      // Replace with your actual n8n webhook URL
+      const n8nWebhookUrl = 'https://n8n.srv888880.hstgr.cloud/webhook/ef140662-d5bb-4ad4-93d3-54268b6019be';
+      
+      const payload = {
+        ...formData,
+        // Convert arrays to comma-separated strings
+        campaignObjective: formData.campaignObjective.join(', '),
+        targetAudience: formData.targetAudience.join(', '),
+        age: formData.age.join(', '),
+        timestamp: new Date().toISOString(),
+        source: 'react_form'
+      };
+
+      console.log('Payload being sent:', payload);
+
       const response = await fetch(n8nWebhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          timestamp: new Date().toISOString(),
-          source: 'react_form'
-        })
+        body: JSON.stringify(payload),
+        mode: 'cors',
       });
 
+      console.log('Response status:', response.status);
+
       if (response.ok) {
+        const responseData = await response.text();
+        console.log('Response data:', responseData);
+        
         setSubmitStatus('success');
         setFormData({
           name: '',
@@ -78,16 +118,28 @@ const RewardStrategyForm = () => {
           companyName: '',
           brandName: '',
           industry: '',
-          campaignObjective: '',
-          targetAudience: '',
-          age: ''
+          campaignObjective: [],
+          targetAudience: [],
+          age: []
         });
       } else {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
         setSubmitStatus('error');
+        setErrorDetails(`Server error (${response.status}): ${errorText || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       setSubmitStatus('error');
+      
+      // More specific error messages
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        setErrorDetails('Network error: Unable to connect to server. Please check your internet connection.');
+      } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
+        setErrorDetails('CORS error: The server needs to allow cross-origin requests.');
+      } else {
+        setErrorDetails(`Error: ${error.message}`);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -111,7 +163,7 @@ const RewardStrategyForm = () => {
           </p>
         </div>
 
-        <div className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
@@ -178,22 +230,22 @@ const RewardStrategyForm = () => {
                 placeholder="e.g., Unilever, P&G, Nestle"
               />
             </div>
+          </div>
 
-            <div>
-              <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
-                <Building2 className="w-4 h-4 mr-2" />
-                Brand Name *
-              </label>
-              <input
-                type="text"
-                name="brandName"
-                value={formData.brandName}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="e.g., Lizol, Maggi, Dove"
-              />
-            </div>
+          <div>
+            <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+              <Building2 className="w-4 h-4 mr-2" />
+              Brand Name *
+            </label>
+            <input
+              type="text"
+              name="brandName"
+              value={formData.brandName}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="e.g., Lizol, Maggi, Dove"
+            />
           </div>
 
           <div>
@@ -214,11 +266,6 @@ const RewardStrategyForm = () => {
                   {industry}
                 </option>
               ))}
-              <option value="Stationery">Stationery</option>
-              <option value="Kitchenware and homeware">Kitchenware and homeware</option>
-              <option value="Toys">Toys</option>
-              <option value="Telecom">Telecom</option>
-              <option value="Pet care and food">Pet care and food</option>
             </select>
           </div>
 
@@ -310,13 +357,18 @@ const RewardStrategyForm = () => {
           {submitStatus === 'error' && (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 font-medium">
-                ❌ There was an error submitting your request. Please try again.
+                ❌ There was an error submitting your request.
               </p>
+              {errorDetails && (
+                <p className="text-red-600 text-sm mt-2">
+                  Details: {errorDetails}
+                </p>
+              )}
             </div>
           )}
 
           <button
-            onClick={handleSubmit}
+            type="submit"
             disabled={isSubmitting}
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -332,7 +384,7 @@ const RewardStrategyForm = () => {
               </>
             )}
           </button>
-        </div>
+        </form>
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
